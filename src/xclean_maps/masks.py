@@ -431,6 +431,10 @@ def moving_mask(disp_a, T_wa, neighbours, K, fB, p=MASK_PARAMS):
 def hog_people(grey, weight_min=0.5):
     """OpenCV's built-in HOG people detector (no model file); boxes as a mask."""
     import cv2
+    if not hasattr(cv2, "HOGDescriptor"):
+        raise SystemExit("xclean-maps: this OpenCV (%s) has no HOGDescriptor (the people mask needs it). OpenCV 5 keeps "
+                         "HOG in the contrib build: pip uninstall -y opencv-python && pip install "
+                         "opencv-contrib-python==%s" % (cv2.__version__, cv2.__version__))
     hog = cv2.HOGDescriptor()
     hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
     rects, weights = hog.detectMultiScale(grey, winStride=(8, 8), padding=(8, 8), scale=1.05)
