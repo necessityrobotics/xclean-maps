@@ -1,0 +1,53 @@
+xclean-maps - Gaussian-splat maps from xclean runs
+Copyright 2026 Necessity Robotics, India
+
+This product includes xclean-maps, developed by Necessity Robotics (<https://necessityrobotics.github.io>).
+Licensed under the Apache License, Version 2.0 (the "License"); see the LICENSE file.
+
+Under section 4(d) of the License, if you distribute xclean-maps or a product that includes it, you must include a
+readable copy of the attribution notices in this file in at least one of these places: a NOTICE file distributed with
+it, its source code or documentation, or a display where your product shows third-party notices.
+
+-----------------------------------------------------------------------------------------------------------------------
+Third-party software that xclean-maps uses
+-----------------------------------------------------------------------------------------------------------------------
+
+gsplat 1.4.0
+  Copyright the gsplat authors (nerfstudio-project, <https://github.com/nerfstudio-project/gsplat>).
+  Licensed under the Apache License, Version 2.0.
+  xclean-maps calls gsplat's rasterizer (gsplat.rasterization) and its MCMC densification strategy
+  (gsplat.strategy.MCMCStrategy and gsplat.strategy.ops). xclean-maps contains no gsplat source code, except a small
+  PyTorch port of one gsplat CUDA kernel that only the CPU unit tests use (src/xclean_maps/mcmc_wrap.py,
+  compute_relocation_torch, a port of gsplat/cuda/csrc/compute_relocation.cu).
+  The Windows gsplat wheel that the xclean-maps GitHub release offers is an UNMODIFIED build of gsplat 1.4.0 (source:
+  the gsplat 1.4.0 source distribution on PyPI), compiled for Python 3.12, PyTorch 2.9.1 and CUDA 13.0. It is
+  distributed under gsplat's own Apache-2.0 licence, with gsplat's LICENSE file inside the wheel.
+
+GLM (OpenGL Mathematics), bundled inside gsplat (gsplat/cuda/csrc/third_party/glm)
+  Copyright (c) 2005 - G-Truc Creation. Licensed under the MIT License (see glm's copying.txt inside gsplat).
+
+xclean (import name xclean; distribution xstereo-slam)
+  Copyright 2026 Necessity Robotics, India. Apache License, Version 2.0. xclean-maps reads sequences with xclean's
+  reader and computes depth with xclean's 32-direction SGM (xclean/stereo/sgm32.py). See xclean's own NOTICE.
+
+PyTorch (BSD-3-Clause), NumPy (BSD-3-Clause), SciPy (BSD-3-Clause), OpenCV (Apache-2.0), CuPy (MIT),
+Matplotlib (Matplotlib License, PSF-based), psutil (BSD-3-Clause): used as installed packages, not redistributed.
+
+plyfile (GPL-3.0) is NOT a dependency. When a user has it installed, xclean-maps uses it only as an optional second
+parser to check the written splats.ply.
+
+-----------------------------------------------------------------------------------------------------------------------
+Data
+-----------------------------------------------------------------------------------------------------------------------
+
+xclean-maps 0.1.0 ships no model weights and no data. A map built with xclean-maps is derived from the user's own
+sequence: its licence follows the licence of that data.
+
+GSKY-1 (our learned grey-sky model) is NOT included in this release. If a later release includes it, its notice is:
+  GSKY-1 was trained by Necessity Robotics from scratch on (1) TartanAir (W. Wang, D. Zhu, X. Wang, Y. Hu, Y. Qiu,
+  C. Wang, Y. Hu, A. Kapoor, S. Scherer, "TartanAir: A Dataset to Push the Limits of Visual SLAM", IROS 2020,
+  Carnegie Mellon University AirLab, <https://theairlab.org/tartanair-dataset/>), licensed under CC BY 4.0
+  (<https://creativecommons.org/licenses/by/4.0/>), and (2) the Rosario Dataset (T. Pire, M. Mujica, J. Civera,
+  E. Kofman, IJRR 38(6), 2019; CIFASIS, CONICET-UNR, <https://robot.cifasis-conicet.gov.ar/>), licensed under
+  CC BY 4.0. Changes: sky labels were derived from the images; the weights hold no image data. The dataset authors do
+  not endorse this work.
