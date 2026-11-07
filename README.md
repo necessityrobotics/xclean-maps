@@ -51,12 +51,13 @@ Check: `xclean-maps --version` and `xclean doctor`.
 xclean run D:\data\my_route --out D:\runs\my_route
 ```
 
-**4. Build the map** (`small` first: about 15 min on an RTX 5090 for a 2-minute route):
+**4. Build the map** (`small` first: about 30 min on an RTX 5090 for a 2-minute, 640 m route from `xclean run`):
 
 ```
 xclean-maps build D:\runs\my_route --out D:\maps\my_route --preset small
 ```
 
+Keep the sequence on an SSD: xclean and the depth stage read every image, and a USB hard disk can make them 10x slower.
 xclean-maps finds the sequence folder in the run's own files. If it cannot, it says so: then add
 `--sequence D:\data\my_route`. When `small` looks right, build again with `--preset default` (the website recipe,
 about 1 h on an RTX 5090) into a new `--out` folder.
