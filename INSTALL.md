@@ -26,6 +26,8 @@ Or make a new environment with Python 3.12 and install xclean into it.
 Then:
 
 ```
+pip uninstall -y opencv-python                             # xclean pins opencv-python; OpenCV 5 keeps HOG (people mask) only in contrib
+pip install opencv-contrib-python==5.0.0.93                # same version as xclean's pin, a superset (xclean doctor: 24 OK)
 pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu130
 pip install gsplat-1.4.0-cp312-cp312-win_amd64.whl        # from the xclean-maps GitHub release assets
 pip install xclean-maps                                    # or, from a source tree: pip install .

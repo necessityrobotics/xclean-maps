@@ -25,7 +25,7 @@ classifiers = [
 dependencies = [
     "numpy>=2.0",
     "scipy>=1.13",
-    "opencv-python>=4.10",
+    "opencv-contrib-python>=4.10",   # OpenCV 5 keeps HOG (people mask) in the contrib build
     "matplotlib>=3.8",
     "psutil>=5.9",
 ]
