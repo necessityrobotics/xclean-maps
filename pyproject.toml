@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xclean-maps"
+version = "0.1.0"
+description = "3D Gaussian-splat maps from xclean (stereo-inertial SLAM) runs: depth, training, evaluation, export, viewer"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Necessity Robotics" }]
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Image Processing",
+]
+# torch and gsplat are NOT listed: their wheels depend on your CUDA version and (for gsplat on Windows) come from our
+# release assets. Install them first, as INSTALL.md says. xclean itself (the `xstereo-slam` distribution, import name
+# xclean) supplies the sequence reader and the 32-direction SGM.
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "opencv-python>=4.10",
+    "matplotlib>=3.8",
+    "psutil>=5.9",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.urls]
+Source = "https://github.com/necessityrobotics/xclean"
+
+[project.scripts]
+xclean-maps = "xclean_maps.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["xclean_maps*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
