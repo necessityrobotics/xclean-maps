@@ -53,11 +53,14 @@ def _rot_ok(R, tol=1e-5):
 
 
 def detect_layout(run_dir):
-    """'replay' (recorder.jsonl / trajectory_live.csv) or 'run' (kit/trajectory_kf.csv); None when neither."""
-    if os.path.isfile(os.path.join(run_dir, "recorder.jsonl")) or os.path.isfile(os.path.join(run_dir, "trajectory_live.csv")):
+    """'replay' (recorder.jsonl, or trajectory_live.csv without a kit) or 'run' (kit/trajectory_kf.csv); None when neither.
+    `xclean run` also writes trajectory_live.csv, so a folder with a kit is a run folder unless it has recorder.jsonl."""
+    if os.path.isfile(os.path.join(run_dir, "recorder.jsonl")):
         return "replay"
     if os.path.isfile(os.path.join(run_dir, "kit", "trajectory_kf.csv")):
         return "run"
+    if os.path.isfile(os.path.join(run_dir, "trajectory_live.csv")):
+        return "replay"
     return None
 
 
@@ -354,7 +357,12 @@ class KitRun(_RunBase):
                            n_duplicate_kf=len(kfs) - len(set(kfs)))
 
     def sequence_folder(self):
-        return self.manifest.get("dataset")
+        """`xclean run` records the sequence folder it was given as run_manifest "tag" (0.2.0); "dataset" in other kits."""
+        for k in ("dataset", "tag", "sequence_folder"):
+            v = self.manifest.get(k)
+            if isinstance(v, str) and os.path.isdir(v):
+                return v
+        return None
 
     def gravity(self):
         s = self.summary or {}

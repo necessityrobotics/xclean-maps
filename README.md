@@ -12,43 +12,69 @@ images. It is the map builder that made the maps on the xclean website: the same
 densification, losses, exposure model, masks, sky rule and seeds (see CHANGES_FROM_INTERNAL.md for what we removed to
 publish it).
 
-Licence: Apache-2.0 (see LICENSE and NOTICE). Status: version 0.1.0, Windows 11 + NVIDIA GPU. Linux is untested.
+Licence: Apache-2.0 (see LICENSE and NOTICE). Status: version 0.1.0, Windows 11 x64 + NVIDIA GPU (CUDA 13 driver).
+Linux is untested.
 
-## Install
+## Quick start (Windows)
 
-See [INSTALL.md](INSTALL.md). In short (Windows, Python 3.12, in a copy of the xclean environment):
+You need: an NVIDIA GPU with a recent driver (CUDA 13), Anaconda or Miniconda, and xclean's own environment.
+No C++ compiler and no CUDA Toolkit are needed: we ship a prebuilt gsplat wheel.
+
+**1. Make a map environment** (a copy of xclean's environment, so xclean itself stays as it is). In an Anaconda Prompt:
 
 ```
+conda create -n xclean_maps --clone xclean
+conda activate xclean_maps
+```
+
+No xclean environment yet? Make one first from xclean's `environment.yml` (see the xclean README), then clone it.
+
+**2. Install** (about 3 GB, mostly PyTorch):
+
+```
+pip uninstall -y opencv-python
+pip install opencv-contrib-python==5.0.0.93
 pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu130
-pip install gsplat-1.4.0-cp312-cp312-win_amd64.whl        # our prebuilt wheel, from the GitHub release assets
-pip install xclean-maps
+pip install https://github.com/necessityrobotics/xclean-maps/raw/v0.1.0/wheels/gsplat-1.4.0-cp312-cp312-win_amd64.whl
+pip install https://github.com/necessityrobotics/xclean-maps/archive/refs/tags/v0.1.0.zip
 ```
 
-## Use
+Why the OpenCV swap: xclean pins `opencv-python` 5.0.0.93; OpenCV 5 keeps the HOG people detector (used for the
+people mask) only in the contrib build. `opencv-contrib-python` is the same version with extra modules; xclean works
+with it unchanged (`xclean doctor` checks it).
 
-1. Run xclean on your sequence (see xclean's README):
+Check: `xclean-maps --version` and `xclean doctor`.
 
-   ```
-   xclean replay D:\data\my_route --out D:\runs\my_route --mode lockstep
-   ```
+**3. Run xclean on your sequence** (any of these output folders works):
 
-2. Build the map:
+```
+xclean run D:\data\my_route --out D:\runs\my_route
+```
 
-   ```
-   xclean-maps build D:\runs\my_route --sequence D:\data\my_route --out D:\maps\my_route
-   ```
+**4. Build the map** (`small` first: about 15 min on an RTX 5090 for a 2-minute route):
 
-   `--sequence` can be left out when the run folder records its sequence folder (`harness.json` of `xclean replay`,
-   `kit/run_manifest.json` of `xclean run`).
+```
+xclean-maps build D:\runs\my_route --out D:\maps\my_route --preset small
+```
 
-3. Look at it:
+xclean-maps finds the sequence folder in the run's own files. If it cannot, it says so: then add
+`--sequence D:\data\my_route`. When `small` looks right, build again with `--preset default` (the website recipe,
+about 1 h on an RTX 5090) into a new `--out` folder.
 
-   ```
-   xclean-maps view D:\maps\my_route
-   ```
+**5. Look at it:**
 
-   Keys: W/S forward/back, A/D left/right, Q/E down/up, drag the mouse to look, +/- speed, SPACE plays the camera
-   path, TAB colour/depth, P screenshot, ESC quit. Without a CUDA GPU the viewer draws the splat centres as points.
+```
+xclean-maps view D:\maps\my_route --browser
+```
+
+This opens the map in your web browser (served from this PC only, at 127.0.0.1; Ctrl+C stops it). Mouse: left drag
+orbits, right drag pans, the wheel zooms. Keys: W/A/S/D move, Q/E down/up, Space plays the camera path. "Camera view"
+puts you in a recorded camera; the slider moves along the route.
+
+A desktop window viewer is also there: `xclean-maps view D:\maps\my_route` (keys: W/S forward/back, A/D left/right,
+Q/E down/up, drag to look, +/- speed, SPACE plays the camera path, TAB colour/depth, P screenshot, ESC quit).
+
+Full install notes, the GPU list and troubleshooting: [INSTALL.md](INSTALL.md).
 
 `splats.ply` is the standard INRIA 3DGS format, so other viewers (for example SuperSplat) open it too.
 

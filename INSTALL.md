@@ -29,8 +29,8 @@ Then:
 pip uninstall -y opencv-python                             # xclean pins opencv-python; OpenCV 5 keeps HOG (people mask) only in contrib
 pip install opencv-contrib-python==5.0.0.93                # same version as xclean's pin, a superset (xclean doctor: 24 OK)
 pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu130
-pip install gsplat-1.4.0-cp312-cp312-win_amd64.whl        # from the xclean-maps GitHub release assets
-pip install xclean-maps                                    # or, from a source tree: pip install .
+pip install https://github.com/necessityrobotics/xclean-maps/raw/v0.1.0/wheels/gsplat-1.4.0-cp312-cp312-win_amd64.whl
+pip install https://github.com/necessityrobotics/xclean-maps/archive/refs/tags/v0.1.0.zip   # or, from a clone: pip install .
 ```
 
 Check the install:
@@ -42,10 +42,24 @@ python -c "import torch, gsplat; print(torch.__version__, gsplat.__version__, to
 
 The last line must print `2.9.1+cu130 1.4.0 True`.
 
+## Troubleshooting
+
+| Message | Fix |
+|---|---|
+| `cv2 has no attribute HOGDescriptor` / `this OpenCV ... has no HOGDescriptor` | `pip uninstall -y opencv-python` then `pip install opencv-contrib-python==5.0.0.93` |
+| `torch.cuda.is_available()` is False | update the NVIDIA driver (CUDA 13 needs a 580-series or newer driver); check that `torch.__version__` ends in `+cu130` |
+| `DLL load failed` when importing gsplat | torch is not 2.9.1+cu130, or Python is not 3.12; reinstall step 2 in that environment |
+| out of GPU memory (K5) | use `--preset small`; close other GPU programs |
+| the build cannot find the sequence | add `--sequence <the folder you gave xclean>` |
+| a stage stopped | run the same command again: finished stages are skipped and training resumes |
+| the browser page stays black | wait for "map loaded", then click the page once; use Chrome, Edge or Firefox |
+
 About our gsplat wheel:
 
-- It is an UNMODIFIED build of gsplat 1.4.0 (Apache-2.0, nerfstudio-project), from the gsplat 1.4.0 source
-  distribution on PyPI. See NOTICE.
+- It is an UNMODIFIED build of gsplat 1.4.0 (Apache-2.0, nerfstudio-project), from the gsplat 1.4.0 files on PyPI.
+  See NOTICE and wheels/GSPLAT_WHEEL_BUILD_RECORD.md (inputs, hashes, flags, checks). sha256 of the wheel:
+  caeddb524e90ef5740b73f0dabcf94aad0cfc5097127c3fc10aa9d1cd11c7b9c (wheels/SHA256SUMS.txt).
+- Tested: its renders are bit-identical to a just-in-time gsplat 1.4.0 build (20,000 Gaussians, 640x400).
 - Built for: Windows x64, CPython 3.12, PyTorch 2.9.1 + CUDA 13.0.
 - GPU architectures in the wheel: 7.5, 8.0, 8.6, 8.9, 9.0, 12.0, plus PTX for newer GPUs.
 - It needs exactly torch 2.9.1 (the compiled extension is tied to that PyTorch ABI). With another PyTorch version,

@@ -62,6 +62,10 @@ def _build_parser():
     v.add_argument("map_dir")
     v.add_argument("--renderer", default="auto", choices=("auto", "gsplat", "points"))
     v.add_argument("--snapshot", default=None, help="render the first camera to this PNG and exit (no window)")
+    v.add_argument("--browser", action="store_true",
+                   help="open the map in your web browser (three.js + Spark, served from this PC only; Ctrl+C stops it)")
+    v.add_argument("--port", type=int, default=0, help="--browser: port on 127.0.0.1 (default: a free port)")
+    v.add_argument("--no-open", action="store_true", help="--browser: print the address, do not open a browser")
 
     i = sub.add_parser("info", help="read an xclean output folder and print what a build would use (no writes)")
     i.add_argument("run_dir")
@@ -90,6 +94,9 @@ def main(argv=None):
         from . import pipeline
         return pipeline.build(a)
     if a.cmd == "view":
+        if a.browser:
+            from . import webview
+            return webview.serve(a.map_dir, port=a.port, open_browser=not a.no_open)
         from . import viewer
         r = viewer.view(a.map_dir, a.renderer, a.snapshot)
         if a.snapshot:

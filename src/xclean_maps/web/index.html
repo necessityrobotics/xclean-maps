@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xclean-maps viewer</title>
+<style>
+  :root { --bg:#0b0d10; --fg:#e8eaed; --mut:#9aa3ad; --acc:#4fb3d9; --panel:rgba(16,19,23,.86); }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:14px/1.4 system-ui,Segoe UI,sans-serif; overflow:hidden; }
+  canvas { display:block; width:100vw; height:100vh; }
+  #hud { position:fixed; left:12px; top:12px; max-width:min(420px, calc(100vw - 24px)); background:var(--panel); padding:10px 12px; border-radius:8px; }
+  #hud h1 { font-size:15px; margin:0 0 4px; }
+  #hud p { margin:2px 0; color:var(--mut); font-size:12.5px; }
+  #bar { position:fixed; left:12px; bottom:12px; right:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; background:var(--panel); padding:8px 10px; border-radius:8px; }
+  button { background:#1d232a; color:var(--fg); border:1px solid #2c343d; border-radius:6px; padding:6px 10px; cursor:pointer; font:inherit; }
+  button.on { border-color:var(--acc); color:var(--acc); }
+  input[type=range] { flex:1; min-width:160px; }
+  #st { color:var(--mut); font-size:12.5px; min-width:120px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "/_viewer/vendor/three/three.module.js", "three/addons/": "/_viewer/vendor/three/addons/",
+               "@sparkjsdev/spark": "/_viewer/vendor/spark/spark.module.js" } }
+</script>
+</head>
+<body>
+<div id="hud">
+  <h1 id="title">xclean-maps viewer</h1>
+  <p id="facts"></p>
+  <p>Mouse: left drag = orbit, right drag = pan, wheel = zoom. Keys: W/S/A/D move, Q/E down/up, Space = play route.</p>
+</div>
+<div id="bar">
+  <button id="pov" class="on">Camera view</button>
+  <button id="orbit">Orbit view</button>
+  <button id="play">Play route</button>
+  <input id="slider" type="range" min="0" max="1" value="0" step="1" aria-label="position on the route">
+  <span id="st">loading map...</span>
+</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
+
+const st = document.getElementById('st');
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+document.body.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0d10);
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 3000);
+const spark = new SparkRenderer({ renderer, enableLod: false });
+scene.add(spark);
+
+// map frame (OpenCV-like, from the build) -> three.js world with gravity up = +Y (up from report.json)
+const report = await (await fetch('/report.json')).json().catch(() => ({}));
+const upv = (report.preview && report.preview.up_map) || report.up || [0, -1, 0];
+const UP_MAP = new THREE.Vector3(...upv).normalize();
+document.getElementById('title').textContent = 'xclean-maps: ' + (report.name || report.map || 'map');
+const h = report.heldout || {};
+document.getElementById('facts').textContent = [report.preset && ('preset ' + report.preset), report.n_splats && (report.n_splats.toLocaleString() + ' splats'),
+  h.psnr_splats_on_black_db && ('held-out PSNR ' + h.psnr_splats_on_black_db.toFixed(2) + ' dB on black'),
+  h.psnr_with_sky_panorama_db && (h.psnr_with_sky_panorama_db.toFixed(2) + ' dB with sky')].filter(Boolean).join(', ');
+const world = new THREE.Group();
+world.quaternion.setFromUnitVectors(UP_MAP, new THREE.Vector3(0, 1, 0));
+world.updateMatrixWorld(true);
+scene.add(world);
+const F_CV = new THREE.Matrix4().makeScale(1, -1, -1);   // OpenCV camera axes -> three.js camera axes
+
+{
+  const m = new SplatMesh({ url: '/splats.ply', extSplats: true });
+  world.add(m);
+  m.initialized.then(() => { st.textContent = 'map loaded'; window.__mapReady = true; })
+    .catch(e => { st.textContent = 'load failed: ' + (e && e.message); console.error(e); });
+}
+
+const allCams = (await (await fetch('/cameras.json')).json()).sort((a, b) => a.t - b.t);
+const cams = allCams.filter((c, i) => i % 3 === 0).map(c => ({ M: c.T_world_cam.slice(0, 3).flat(), fx: c.fx, w: c.width, h: c.height }));
+const slider = document.getElementById('slider');
+slider.max = cams.length - 1;
+function camPose(i) {
+  const c = cams[i], M = c.M;
+  const T = new THREE.Matrix4().set(M[0], M[1], M[2], M[3], M[4], M[5], M[6], M[7], M[8], M[9], M[10], M[11], 0, 0, 0, 1);
+  const W = world.matrixWorld.clone().multiply(T).multiply(F_CV);
+  const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3();
+  W.decompose(p, q, s);
+  return { p, q, fovy: 2 * Math.atan(c.h / 2 / c.fx) * 180 / Math.PI };
+}
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+let mode = 'pov', idx = 0, playing = false;
+function setPov(i) {
+  idx = Math.max(0, Math.min(cams.length - 1, i));
+  const { p, q, fovy } = camPose(idx);
+  camera.position.copy(p); camera.quaternion.copy(q); camera.fov = fovy; camera.updateProjectionMatrix();
+  slider.value = idx;
+  controls.target.copy(new THREE.Vector3(0, 0, -5).applyQuaternion(q).add(p));
+}
+function setMode(m) {
+  mode = m;
+  document.getElementById('pov').classList.toggle('on', m === 'pov');
+  document.getElementById('orbit').classList.toggle('on', m === 'orbit');
+  controls.enabled = m === 'orbit';
+  if (m === 'pov') setPov(idx);
+  else {
+    const { p } = camPose(idx);
+    camera.fov = 50; camera.updateProjectionMatrix();
+    camera.position.copy(p).add(new THREE.Vector3(0, 40, 30));
+    controls.target.copy(p); camera.lookAt(p);
+  }
+}
+document.getElementById('pov').onclick = () => setMode('pov');
+document.getElementById('orbit').onclick = () => setMode('orbit');
+const playBtn = document.getElementById('play');
+function togglePlay() { playing = !playing; playBtn.classList.toggle('on', playing); if (playing && mode !== 'pov') setMode('pov'); }
+playBtn.onclick = togglePlay;
+slider.oninput = () => { playing = false; playBtn.classList.remove('on'); if (mode === 'pov') setPov(+slider.value); else { idx = +slider.value; setMode('orbit'); } };
+
+const keys = new Set();
+addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); togglePlay(); } keys.add(e.code); });
+addEventListener('keyup', e => keys.delete(e.code));
+function resize() { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize); resize();
+setPov(0);
+
+let last = performance.now(), acc = 0;
+let kick = 0;
+renderer.setAnimationLoop(now => {
+  // after load: move the camera a hair for one frame, then restore the pose, so Spark sorts for the first view
+  if (window.__mapReady && kick < 12) { if (kick % 6 === 0) camera.position.y += 1e-3; else if (kick % 6 === 3) setMode(mode); kick++; }
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (playing) { acc += dt * 8; while (acc >= 1) { acc -= 1; if (idx < cams.length - 1) setPov(idx + 1); else { playing = false; playBtn.classList.remove('on'); } } }
+  if (keys.size && !playing) {
+    const v = new THREE.Vector3(), sp = 6 * dt;
+    if (keys.has('KeyW')) v.z -= sp; if (keys.has('KeyS')) v.z += sp;
+    if (keys.has('KeyA')) v.x -= sp; if (keys.has('KeyD')) v.x += sp;
+    if (keys.has('KeyQ')) v.y -= sp; if (keys.has('KeyE')) v.y += sp;
+    v.applyQuaternion(camera.quaternion); camera.position.add(v); controls.target.add(v);
+  }
+  if (mode === 'orbit') controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>

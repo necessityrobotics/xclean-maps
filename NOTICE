@@ -19,9 +19,10 @@ gsplat 1.4.0
   (gsplat.strategy.MCMCStrategy and gsplat.strategy.ops). xclean-maps contains no gsplat source code, except a small
   PyTorch port of one gsplat CUDA kernel that only the CPU unit tests use (src/xclean_maps/mcmc_wrap.py,
   compute_relocation_torch, a port of gsplat/cuda/csrc/compute_relocation.cu).
-  The Windows gsplat wheel that the xclean-maps GitHub release offers is an UNMODIFIED build of gsplat 1.4.0 (source:
-  the gsplat 1.4.0 source distribution on PyPI), compiled for Python 3.12, PyTorch 2.9.1 and CUDA 13.0. It is
-  distributed under gsplat's own Apache-2.0 licence, with gsplat's LICENSE file inside the wheel.
+  The Windows gsplat wheel in this repository (wheels/gsplat-1.4.0-cp312-cp312-win_amd64.whl) is an UNMODIFIED build
+  of gsplat 1.4.0 (sources: the gsplat 1.4.0 files on PyPI; see wheels/GSPLAT_WHEEL_BUILD_RECORD.md), compiled for
+  Python 3.12, PyTorch 2.9.1 and CUDA 13.0. It is distributed under gsplat's own Apache-2.0 licence, with gsplat's
+  LICENSE file inside the wheel.
 
 GLM (OpenGL Mathematics), bundled inside gsplat (gsplat/cuda/csrc/third_party/glm)
   Copyright (c) 2005 - G-Truc Creation. Licensed under the MIT License (see glm's copying.txt inside gsplat).
@@ -30,7 +31,15 @@ xclean (import name xclean; distribution xstereo-slam)
   Copyright 2026 Necessity Robotics, India. Apache License, Version 2.0. xclean-maps reads sequences with xclean's
   reader and computes depth with xclean's 32-direction SGM (xclean/stereo/sgm32.py). See xclean's own NOTICE.
 
-PyTorch (BSD-3-Clause), NumPy (BSD-3-Clause), SciPy (BSD-3-Clause), OpenCV (Apache-2.0), CuPy (MIT),
+three.js r186 (src/xclean_maps/web/vendor/three: three.module.js, three.core.js, OrbitControls.js, Pass.js)
+  Copyright 2010-2026 three.js authors. MIT License (src/xclean_maps/web/vendor/three/LICENSE). Used unmodified by the
+  browser viewer.
+
+Spark (src/xclean_maps/web/vendor/spark/spark.module.js), Copyright 2025 World Labs Technologies, Inc.
+  MIT License (src/xclean_maps/web/vendor/spark/LICENSE); it bundles fflate (MIT,
+  src/xclean_maps/web/vendor/spark/THIRD_PARTY_LICENSE_fflate). Used unmodified by the browser viewer.
+
+PyTorch (BSD-3-Clause), NumPy (BSD-3-Clause), SciPy (BSD-3-Clause), OpenCV / opencv-contrib-python (Apache-2.0), CuPy (MIT),
 Matplotlib (Matplotlib License, PSF-based), psutil (BSD-3-Clause): used as installed packages, not redistributed.
 
 plyfile (GPL-3.0) is NOT a dependency. When a user has it installed, xclean-maps uses it only as an optional second

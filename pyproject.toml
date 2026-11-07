@@ -34,7 +34,8 @@ dependencies = [
 test = ["pytest>=8"]
 
 [project.urls]
-Source = "https://github.com/necessityrobotics/xclean"
+Source = "https://github.com/necessityrobotics/xclean-maps"
+xclean = "https://github.com/necessityrobotics/xclean"
 
 [project.scripts]
 xclean-maps = "xclean_maps.cli:main"
@@ -42,6 +43,9 @@ xclean-maps = "xclean_maps.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["xclean_maps*"]
+
+[tool.setuptools.package-data]
+xclean_maps = ["web/*.html", "web/vendor/three/*", "web/vendor/three/addons/controls/*", "web/vendor/three/addons/postprocessing/*", "web/vendor/spark/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
